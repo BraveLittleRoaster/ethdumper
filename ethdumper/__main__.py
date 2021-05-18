@@ -1,5 +1,3 @@
-import selenium.common.exceptions
-
 from ethdumper.setup_logger import ConsoleLogger
 import sys, time
 import argparse
@@ -84,7 +82,7 @@ def setup_driver():
     logger.debug(f"Setting up driver with: HTTP Proxy: {http_proxy}, SSL Proxy: {https_proxy}, SOCKS proxy: {socks_proxy}, Proxy Uname: {proxy_uname}, Proxy Pass: {proxy_pass}")
     driver = webdriver.Firefox(firefox_profile=fp)
     # Set default timeouts
-    driver.set_page_load_timeout(60)
+    driver.set_page_load_timeout(120)
 
     return driver
 
@@ -263,7 +261,7 @@ def key_helper(privKey):
         return key
 
 
-@retry(retry=retry_if_exception_type(WebDriverException), wait=wait_fixed(3))
+@retry(retry=retry_if_exception_type(RetryException), wait=wait_fixed(10))
 def do_login(driver, privKey):
     """
     Login a key. Can be a mnemonic or private key.
@@ -279,7 +277,9 @@ def do_login(driver, privKey):
     if padded_key:
         # Yeah its kind of redundant on the first login, but every other login will allow a logout of the previous key by getting this page.
         try:
+            time.sleep(2)  # Give it a bit of a rest so geckodriver doesn't crash under heavy load.
             driver.get(url)
+            time.sleep(2)
         except TimeoutException as e:
             logger.warn(f"{privKey}: Issue logging in with this key. Skipping. Error: {e}")
             logger.spam(traceback.print_exc())
@@ -290,7 +290,6 @@ def do_login(driver, privKey):
         return False
 
     try:
-
         # Click the "Access My Wallet" card.
         access_wallet_card_xpath = "/html/body/div[1]/div[3]/div[1]/div/div/div[2]/a[2]"
         access_wallet_card = WebDriverWait(driver, timeout).until(
@@ -411,14 +410,18 @@ def do_login(driver, privKey):
 
     except TimeoutException as e:
         logger.warn(f"Worker failed to login with {padded_key}. Skipping... Error: {e}")
-        logger.spam(traceback.print_exc())
+        logger.warn(traceback.print_exc())
         return False
+    except (NoSuchWindowException, InvalidSessionIdException, WebDriverException) as worker_error:
+        logger.error(f"Driver crashed for worker when processing {privKey}. Will retry this. {worker_error}")
+        logger.error(traceback.print_exc())
+        raise RetryException
 
 
 def dump_eth(driver, privKey, results):
 
     timeout = 60
-    logger.info(f"{privKey}: Attempting to transfer {results.get('ETH')} ETH ({results.get('ETH-USD')}) to {rxwallet}")
+    logger.info(f"{privKey}: Attempting to transfer {results.get('ETH')} ETH (${results.get('ETH-USD')}) to {rxwallet}")
     send_tx_card_xpath = "/html/body/div[1]/div[3]/div[9]/div[2]/div/div[4]/div[1]/div[1]/div[2]/div[1]/div/div/div"
     send_tx_card_btn = WebDriverWait(driver, timeout).until(
         EC.element_to_be_clickable((By.XPATH, send_tx_card_xpath))
@@ -450,10 +453,21 @@ def dump_eth(driver, privKey, results):
 
         # Send the transaction.
         send_tx_xpath = "/html/body/div[1]/div[3]/div[9]/div[2]/div/div[4]/div[4]/div[1]"
+
         send_tx_btn = WebDriverWait(driver, timeout).until(
             EC.element_to_be_clickable((By.XPATH, send_tx_xpath))
         )
-        send_tx_btn.click()
+        try:
+            send_tx_btn.click()
+        except ElementClickInterceptedException:
+            # Sometimes the footer obscures the button, so we want to scroll down a bit so that doesn't happen, then try clicking again.
+            main_div_xpath = "/html/body"
+            main_div = WebDriverWait(driver, timeout).until(
+                EC.element_to_be_clickable((By.XPATH, main_div_xpath))
+            )
+            main_div.send_keys(Keys.PAGE_DOWN)
+            time.sleep(0.5)
+            send_tx_btn.click()
 
         # Confirm and sent the transaction
         send_tx_confirmation_xpath = "/html/body/div[1]/div[6]/div[1]/div/div[1]/div/div/div/div/div[3]/div/div[1]/button[2]"
@@ -462,17 +476,19 @@ def dump_eth(driver, privKey, results):
         )
         send_tx_confirmation_btn.click()
 
-        logger.success(f"{privKey}: Successfully transferred {results.get('ETH')} ({results.get('ETH-USD')}) to {rxwallet}")
+        logger.success(f"{privKey}: Successfully transferred {results.get('ETH')} (${results.get('ETH-USD')}) to {rxwallet}")
         return True
-    except Exception as e:
-        logger.error(f"{privKey}: Was not a able to dump {results.get('ETH')} ({results.get('ETH-USD')}) on this wallet for some reason. Skipping. Error: {e}")
+    except TimeoutException as e:
+        logger.error(f"{privKey}: Was not a able to dump {results.get('ETH')} (${results.get('ETH-USD')}) on this wallet for some reason. Skipping. Error: {e}")
+        logger.spam(traceback.print_exc())
         return False
 
 
+#@retry(retry=retry_if_exception_type(RetryException))
 def run_worker(chunked_work):
 
     driver = setup_driver()
-    logger.debug(f"Worker thread started, handling {len(chunked_work)} tasks and fetching current ETH-USD exchange rate.")
+    logger.info(f"Worker thread started, handling {len(chunked_work)} tasks and fetching current ETH-USD exchange rate.")
     eth_usd = get_token_price("ETH")
     logger.spam(f"Current ETH-USD exchange rate is {eth_usd}")
     session_init(driver)  # Get rid of the pop-up if it's there.
@@ -485,11 +501,9 @@ def run_worker(chunked_work):
                     dump_eth(driver, privKey, results)
             if pbar.last_print_n % 100 == 0:
                 logger.info(f"Totals so far in all wallets: ${get_usd_totals()}: {usd_totals}")
-        except (NoSuchWindowException, InvalidSessionIdException) as worker_error:
-            logger.warn(f"Worker encountered error when attempting to process {privKey}. Skipping this key. {worker_error}")
-            break
-        except Exception as general_error:
-            logger.warn(f"Worker encountered an unknown error with {privKey}. Skipping. {general_error}")
+        except Exception as unhandled:
+            logger.error(f"Unhandled exception when processing {privKey}. {unhandled}")
+            logger.error(traceback.print_exc())
         pbar.update()
     driver.close()
 

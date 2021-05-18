@@ -424,48 +424,49 @@ def dump_eth(driver, privKey, results):
         EC.element_to_be_clickable((By.XPATH, send_tx_card_xpath))
     )
     send_tx_card_btn.click()
-
     not_enough_gas_xpath = "/html/body/div[1]/div[3]/div[9]/div[2]/div/div[4]/div[2]/div/div[1]/div[2]/div[3]"
-    not_enough_gas = driver.find_element_by_xpath(not_enough_gas_xpath)
-    if not_enough_gas.is_displayed():
-        logger.warn(f"{privKey}: Not enough gas to send balance. Skipping")
-        return False
-    else:
-        try:
-            # Input the --to-wallet address to dump this Ethereum to.
-            to_address_xpath = "/html/body/div[1]/div[3]/div[9]/div[2]/div/div[4]/div[2]/div/div[2]/div/div[3]/div/div[1]/input"
-            to_address = WebDriverWait(driver, timeout).until(
-                EC.element_to_be_clickable((By.XPATH, to_address_xpath))
-            )
-            to_address.click()
-            to_address.send_keys(rxwallet)
-
-            # Click the button to populate the entire balance automatically.
-            entire_balance_xpath = "/html/body/div[1]/div[3]/div[9]/div[2]/div/div[4]/div[2]/div/div[1]/div[2]/div[1]/p"
-            entire_balance_btn = WebDriverWait(driver, timeout).until(
-                EC.element_to_be_clickable((By.XPATH, entire_balance_xpath))
-            )
-            entire_balance_btn.click()
-
-            # Send the transaction.
-            send_tx_xpath = "/html/body/div[1]/div[3]/div[9]/div[2]/div/div[4]/div[4]/div[1]"
-            send_tx_btn = WebDriverWait(driver, timeout).until(
-                EC.element_to_be_clickable((By.XPATH, send_tx_xpath))
-            )
-            send_tx_btn.click()
-
-            # Confirm and sent the transaction
-            send_tx_confirmation_xpath = "/html/body/div[1]/div[6]/div[1]/div/div[1]/div/div/div/div/div[3]/div/div[1]/button[2]"
-            send_tx_confirmation_btn = WebDriverWait(driver, timeout).until(
-                EC.element_to_be_clickable((By.XPATH, send_tx_confirmation_xpath))
-            )
-            send_tx_confirmation_btn.click()
-
-            logger.success(f"{privKey}: Successfully transferred {results.get('ETH')} ({results.get('ETH-USD')}) to {rxwallet}")
-            return True
-        except Exception as e:
-            logger.error(f"{privKey}: Was not a able to dump {results.get('ETH')} ({results.get('ETH-USD')}) on this wallet for some reason. Skipping. Error: {e}")
+    try:
+        not_enough_gas = driver.find_element_by_xpath(not_enough_gas_xpath)
+        if not_enough_gas.is_displayed():
+            logger.warn(f"{privKey}: Not enough gas to send balance. Skipping")
             return False
+    except NoSuchElementException:
+        pass
+    try:
+        # Input the --to-wallet address to dump this Ethereum to.
+        to_address_xpath = "/html/body/div[1]/div[3]/div[9]/div[2]/div/div[4]/div[2]/div/div[2]/div/div[3]/div/div[1]/input"
+        to_address = WebDriverWait(driver, timeout).until(
+            EC.element_to_be_clickable((By.XPATH, to_address_xpath))
+        )
+        to_address.click()
+        to_address.send_keys(rxwallet)
+
+        # Click the button to populate the entire balance automatically.
+        entire_balance_xpath = "/html/body/div[1]/div[3]/div[9]/div[2]/div/div[4]/div[2]/div/div[1]/div[2]/div[1]/p"
+        entire_balance_btn = WebDriverWait(driver, timeout).until(
+            EC.element_to_be_clickable((By.XPATH, entire_balance_xpath))
+        )
+        entire_balance_btn.click()
+
+        # Send the transaction.
+        send_tx_xpath = "/html/body/div[1]/div[3]/div[9]/div[2]/div/div[4]/div[4]/div[1]"
+        send_tx_btn = WebDriverWait(driver, timeout).until(
+            EC.element_to_be_clickable((By.XPATH, send_tx_xpath))
+        )
+        send_tx_btn.click()
+
+        # Confirm and sent the transaction
+        send_tx_confirmation_xpath = "/html/body/div[1]/div[6]/div[1]/div/div[1]/div/div/div/div/div[3]/div/div[1]/button[2]"
+        send_tx_confirmation_btn = WebDriverWait(driver, timeout).until(
+            EC.element_to_be_clickable((By.XPATH, send_tx_confirmation_xpath))
+        )
+        send_tx_confirmation_btn.click()
+
+        logger.success(f"{privKey}: Successfully transferred {results.get('ETH')} ({results.get('ETH-USD')}) to {rxwallet}")
+        return True
+    except Exception as e:
+        logger.error(f"{privKey}: Was not a able to dump {results.get('ETH')} ({results.get('ETH-USD')}) on this wallet for some reason. Skipping. Error: {e}")
+        return False
 
 
 def run_worker(chunked_work):

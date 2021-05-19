@@ -384,25 +384,21 @@ def do_login(driver, privKey):
             main_body.click()
             time.sleep(0.5)
             access_wallet_btn.click()
-        try:
-            # Sometimes there is an error window. Lets click this if its visible.
-            error_window_xpath = '//*[@id="__BVID__38___BV_modal_body_"]'
-            error_window = driver.find_element_by_xpath(error_window_xpath)
-            if error_window.is_displayed():
-
-                no_thanks_xpath = "/html/body/div[1]/div[2]/div[2]/div[5]/div/div/div[1]/div/div/div/div/div[3]/div[2]/button[2]"
-                no_thanks_btn = WebDriverWait(driver, timeout).until(
-                    EC.element_to_be_clickable((By.XPATH, no_thanks_xpath))
-                )
-                no_thanks_btn.click()
-        except NoSuchElementException as e:
-            pass
 
         # Something to look for after logging in before dumping the HTML.
         balance_block_xpath = "/html/body/div[1]/div[3]/div[9]/div[2]/div/div[2]/div/div[2]"
         balance_block = WebDriverWait(driver, timeout).until(
             EC.presence_of_element_located((By.XPATH, balance_block_xpath))
         )
+
+        try:
+            # Sometimes there is an error window. Lets click this if its visible.
+            no_thanks_xpath = "/html/body/div[1]/div[2]/div[2]/div[5]/div/div/div[1]/div/div/div/div/div[3]/div[2]/button[2]"
+            no_thanks_btn = driver.find_element_by_xpath(no_thanks_xpath)
+            if no_thanks_btn.is_displayed():
+                no_thanks_btn.click()
+        except NoSuchElementException as e:
+            pass
 
         # Wait for the tokens to load by waiting for the fucking spinner to stop spinning. When it does, the HTML is ready to dump.
         token_loading_spinner = "/html/body/div[1]/div[3]/div[9]/div[2]/div/div[5]/div/div[2]/div[1]/div[3]/div[1]"

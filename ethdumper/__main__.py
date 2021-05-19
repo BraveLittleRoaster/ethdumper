@@ -5,7 +5,7 @@ from tqdm import tqdm
 from multiprocessing.dummy import Pool
 from urllib3.connectionpool import xrange
 from base64 import b64encode
-from selenium import webdriver
+from seleniumwire import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
@@ -14,7 +14,6 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchWindowException, InvalidSessionIdException, ElementClickInterceptedException, WebDriverException
 from tenacity import retry, retry_if_exception_type, wait_fixed
 import traceback
-
 from bs4 import BeautifulSoup
 import requests
 import json
@@ -80,7 +79,10 @@ def setup_driver():
     fp.update_preferences()
 
     logger.debug(f"Setting up driver with: HTTP Proxy: {http_proxy}, SSL Proxy: {https_proxy}, SOCKS proxy: {socks_proxy}, Proxy Uname: {proxy_uname}, Proxy Pass: {proxy_pass}")
-    driver = webdriver.Firefox(firefox_profile=fp)
+    options = {
+        'suppress_connection_errors': True
+    }
+    driver = webdriver.Firefox(firefox_profile=fp, seleniumwire_options=options)
     # Set default timeouts
     driver.set_page_load_timeout(120)
 
@@ -282,7 +284,8 @@ def do_login(driver, privKey):
             time.sleep(2)
         except TimeoutException as e:
             logger.warn(f"{privKey}: Issue logging in with this key. Skipping. Error: {e}")
-            logger.spam(traceback.print_exc())
+            if vlevel >= 3:
+                traceback.print_exc()
             return False
 
     else:
@@ -426,11 +429,13 @@ def do_login(driver, privKey):
 
     except TimeoutException as e:
         logger.warn(f"Worker failed to login with {padded_key}. Skipping...")
-        logger.spam(traceback.print_exc())
+        if vlevel >= 3:
+            traceback.print_exc()
         return False
     except (NoSuchWindowException, InvalidSessionIdException, WebDriverException) as worker_error:
         logger.error(f"Driver crashed for worker when processing {privKey}. Will retry this. {worker_error}")
-        logger.spam(traceback.print_exc())
+        if vlevel >= 3:
+            traceback.print_exc()
         raise RetryException
 
 
@@ -496,7 +501,8 @@ def dump_eth(driver, privKey, results):
         return True
     except TimeoutException as e:
         logger.error(f"{privKey}: Was not a able to dump {results.get('ETH')} (${results.get('ETH-USD')}) on this wallet for some reason. Skipping. Error: {e}")
-        logger.spam(traceback.print_exc())
+        if vlevel >= 3:
+            traceback.print_exc()
         return False
 
 
@@ -518,9 +524,11 @@ def run_worker(chunked_work):
                 logger.info(f"Totals so far in all wallets: ${get_usd_totals()}: {usd_totals}")
         except Exception as unhandled:
             logger.error(f"Unhandled exception when processing {privKey}. {unhandled}")
-            logger.error(traceback.print_exc())
+            if vlevel >= 3:
+                traceback.print_exc()
         pbar.update()
     driver.close()
+    return True
 
 
 def main():
@@ -604,7 +612,10 @@ def main():
         if master_priv_key:
             logger.debug(f"Loaded master mnemonic for wallets that don't have enough gas.")
             chevron_driver = init_chevron_station(master_priv_key)
-        for _ in p.imap_unordered(run_worker, shard(keys, chunk_size)):
+        try:
+            for _ in p.imap_unordered(run_worker, shard(keys, chunk_size)):
+                pass
+        except Exception as e:
             pass
 
     except KeyboardInterrupt:

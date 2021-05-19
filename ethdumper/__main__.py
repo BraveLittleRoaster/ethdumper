@@ -410,11 +410,11 @@ def do_login(driver, privKey):
 
     except TimeoutException as e:
         logger.warn(f"Worker failed to login with {padded_key}. Skipping... Error: {e}")
-        logger.warn(traceback.print_exc())
+        logger.spam(traceback.print_exc())
         return False
     except (NoSuchWindowException, InvalidSessionIdException, WebDriverException) as worker_error:
         logger.error(f"Driver crashed for worker when processing {privKey}. Will retry this. {worker_error}")
-        logger.error(traceback.print_exc())
+        logger.spam(traceback.print_exc())
         raise RetryException
 
 
@@ -503,7 +503,7 @@ def run_worker(chunked_work):
                 logger.info(f"Totals so far in all wallets: ${get_usd_totals()}: {usd_totals}")
         except Exception as unhandled:
             logger.error(f"Unhandled exception when processing {privKey}. {unhandled}")
-            logger.error(traceback.print_exc())
+            logger.spam(traceback.print_exc())
         pbar.update()
     driver.close()
 

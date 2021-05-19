@@ -118,7 +118,7 @@ def session_init(driver):
             wait_for_captcha_solve(driver)
 
         except NoSuchElementException as cfe:
-            logger.spam(f"Checking for cloudflare... PASSED: {cfe}")
+            logger.spam(f"Checking for cloudflare... PASSED: {repr(cfe)}")
 
         onward_btn_xpath = "/html/body/div[1]/div[3]/div[1]/div/div/div/div/div/div[2]/button"
         onward_button = WebDriverWait(driver, 20).until(
@@ -127,7 +127,7 @@ def session_init(driver):
         onward_button.click()
         return True
     except TimeoutException as e:
-        logger.debug(f"Welcome to MEW button not detected: {e}")
+        logger.debug(f"Welcome to MEW button not detected: {repr(e)}")
         return False
 
 
@@ -238,7 +238,7 @@ def wait_for_captcha_solve(driver):
         )
         return True
     except Exception as e:
-        logger.spam(f"Did not detect Captcha solve yet. Checking again in 10s: {e}")
+        logger.spam(f"Did not detect Captcha solve yet. Checking again in 10s: {repr(e)}")
         raise RetryException
 
 
@@ -283,7 +283,7 @@ def do_login(driver, privKey):
             driver.get(url)
             time.sleep(2)
         except TimeoutException as e:
-            logger.warn(f"{privKey}: Issue logging in with this key. Skipping. Error: {e}")
+            logger.warn(f"{privKey}: Issue logging in with this key. Skipping. Error: {repr(e)}")
             if vlevel >= 3:
                 traceback.print_exc()
             return False
@@ -500,7 +500,7 @@ def dump_eth(driver, privKey, results):
         logger.success(f"{privKey}: Successfully transferred {results.get('ETH')} (${results.get('ETH-USD')}) to {rxwallet}")
         return True
     except TimeoutException as e:
-        logger.error(f"{privKey}: Was not a able to dump {results.get('ETH')} (${results.get('ETH-USD')}) on this wallet for some reason. Skipping. Error: {e}")
+        logger.error(f"{privKey}: Was not a able to dump {results.get('ETH')} (${results.get('ETH-USD')}) on this wallet for some reason. Skipping. Error: {repr(e)}")
         if vlevel >= 3:
             traceback.print_exc()
         return False
@@ -523,7 +523,7 @@ def run_worker(chunked_work):
             if pbar.last_print_n % 100 == 0:
                 logger.info(f"Totals so far in all wallets: ${get_usd_totals()}: {usd_totals}")
         except Exception as unhandled:
-            logger.error(f"Unhandled exception when processing {privKey}. {unhandled}")
+            logger.error(f"Unhandled exception when processing {privKey}. {repr(unhandled)}")
             if vlevel >= 3:
                 traceback.print_exc()
         pbar.update()

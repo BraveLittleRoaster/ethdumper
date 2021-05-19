@@ -303,7 +303,7 @@ def do_login(driver, privKey):
             )
         try:
             access_wallet_card.click()
-        except ElementClickInterceptedException:
+        except ElementClickInterceptedException as e:
             # Try to get rid of the toast notification
             main_body.click()
             main_body.send_keys(Keys.ENTER)
@@ -318,7 +318,7 @@ def do_login(driver, privKey):
 
         try:
             software_card.click()
-        except ElementClickInterceptedException:
+        except ElementClickInterceptedException as e:
             # Sometimes this happens, we'll click somewhere and then click again.
             language_xpath = "/html/body/div[1]/div[2]/div[2]/div[5]/div/div/div/div/ul/div[1]/li/a/div"
             language_btn = WebDriverWait(driver, timeout).until(
@@ -378,9 +378,9 @@ def do_login(driver, privKey):
         )
         try:
             access_wallet_btn.click()
-        except ElementClickInterceptedException:
+        except ElementClickInterceptedException as e:
             # Sometimes a toast notification pops up in the way... try to get rid of it.
-            main_body.send_keys(Keys.ESCAPE)
+            main_body.send_keys(Keys.ENTER)
             main_body.click()
             time.sleep(0.5)
             access_wallet_btn.click()
@@ -395,7 +395,7 @@ def do_login(driver, privKey):
                     EC.element_to_be_clickable((By.XPATH, no_thanks_xpath))
                 )
                 no_thanks_btn.click()
-        except NoSuchElementException:
+        except NoSuchElementException as e:
             pass
 
         # Something to look for after logging in before dumping the HTML.
@@ -479,7 +479,7 @@ def dump_eth(driver, privKey, results):
         )
         try:
             send_tx_btn.click()
-        except ElementClickInterceptedException:
+        except ElementClickInterceptedException as e:
             # Sometimes the footer obscures the button, so we want to scroll down a bit so that doesn't happen, then try clicking again.
             main_div_xpath = "/html/body"
             main_div = WebDriverWait(driver, timeout).until(

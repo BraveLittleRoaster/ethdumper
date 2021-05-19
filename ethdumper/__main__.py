@@ -301,7 +301,14 @@ def do_login(driver, privKey):
         access_wallet_card = WebDriverWait(driver, timeout).until(
                 EC.element_to_be_clickable((By.XPATH, access_wallet_card_xpath))
             )
-        access_wallet_card.click()
+        try:
+            access_wallet_card.click()
+        except ElementClickInterceptedException:
+            # Try to get rid of the toast notification
+            main_body.click()
+            main_body.send_keys(Keys.ENTER)
+            time.sleep(0.5)
+            access_wallet_card.click()
 
         # Click the "Software" card.
         software_card_xpath = "/html/body/div[1]/div[3]/div[1]/div[6]/div/div[2]/button[4]"

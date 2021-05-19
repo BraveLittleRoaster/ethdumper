@@ -289,6 +289,12 @@ def do_login(driver, privKey):
         logger.error(f"{privKey}: Invalid private key! Skipping.")
         return False
 
+    # Use this in case we get an intercepted click to ditch the toast notification.
+    main_body_xpath = "/html/body"
+    main_body = WebDriverWait(driver, timeout).until(
+        EC.presence_of_element_located((By.XPATH, main_body_xpath))
+    )
+
     try:
         # Click the "Access My Wallet" card.
         access_wallet_card_xpath = "/html/body/div[1]/div[3]/div[1]/div/div/div[2]/a[2]"
@@ -363,7 +369,14 @@ def do_login(driver, privKey):
         access_wallet_btn = WebDriverWait(driver, timeout).until(
             EC.element_to_be_clickable((By.XPATH, access_wallet_btn_xpath))
         )
-        access_wallet_btn.click()
+        try:
+            access_wallet_btn.click()
+        except ElementClickInterceptedException:
+            # Sometimes a toast notification pops up in the way... try to get rid of it.
+            main_body.send_keys(Keys.ESCAPE)
+            main_body.click()
+            time.sleep(0.5)
+            access_wallet_btn.click()
         try:
             # Sometimes there is an error window. Lets click this if its visible.
             error_window_xpath = '//*[@id="__BVID__38___BV_modal_body_"]'
@@ -484,7 +497,6 @@ def dump_eth(driver, privKey, results):
         return False
 
 
-#@retry(retry=retry_if_exception_type(RetryException))
 def run_worker(chunked_work):
 
     driver = setup_driver()
@@ -503,7 +515,7 @@ def run_worker(chunked_work):
                 logger.info(f"Totals so far in all wallets: ${get_usd_totals()}: {usd_totals}")
         except Exception as unhandled:
             logger.error(f"Unhandled exception when processing {privKey}. {unhandled}")
-            logger.spam(traceback.print_exc())
+            logger.error(traceback.print_exc())
         pbar.update()
     driver.close()
 

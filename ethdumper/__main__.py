@@ -429,7 +429,7 @@ def do_login(driver, privKey):
         return driver.page_source
 
     except TimeoutException as e:
-        logger.warn(f"Worker failed to login with {padded_key}. Skipping... Error: {e}")
+        logger.warn(f"Worker failed to login with {padded_key}. Skipping...")
         logger.spam(traceback.print_exc())
         return False
     except (NoSuchWindowException, InvalidSessionIdException, WebDriverException) as worker_error:

@@ -83,7 +83,8 @@ def setup_driver():
     options = {
         'suppress_connection_errors': True
     }
-    driver = webdriver.Firefox(firefox_profile=fp, seleniumwire_options=options)
+    #driver = webdriver.Firefox(firefox_profile=fp, seleniumwire_options=options)
+    driver = webdriver.Firefox(firefox_profile=fp)
     # Set default timeouts
     driver.set_page_load_timeout(120)
 

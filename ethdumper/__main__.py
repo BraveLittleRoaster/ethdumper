@@ -198,7 +198,6 @@ def parse_page(html, privKey):
             else:
                 logger.debug(f"{privKey}: {token_balance} {ticker} (${token_usd_value})")
     if outfile:
-        print(totals)
         outfile.write(json.dumps(totals)+"\n")
     return totals
 

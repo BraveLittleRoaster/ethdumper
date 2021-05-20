@@ -5,7 +5,8 @@ from tqdm import tqdm
 from multiprocessing.dummy import Pool
 from urllib3.connectionpool import xrange
 from base64 import b64encode
-from seleniumwire import webdriver
+#from seleniumwire import webdriver
+from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait

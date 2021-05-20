@@ -6,8 +6,8 @@ from tqdm import tqdm
 from multiprocessing.dummy import Pool
 from urllib3.connectionpool import xrange
 from base64 import b64encode
-#from seleniumwire import webdriver
-from selenium import webdriver
+from seleniumwire import webdriver
+#from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
@@ -85,8 +85,8 @@ def setup_driver():
     options = {
         'suppress_connection_errors': True
     }
-    #driver = webdriver.Firefox(firefox_profile=fp, seleniumwire_options=options)
-    driver = webdriver.Firefox(firefox_profile=fp)
+    driver = webdriver.Firefox(firefox_profile=fp, seleniumwire_options=options)
+    #driver = webdriver.Firefox(firefox_profile=fp)
 
     # Set default timeouts
     driver.set_page_load_timeout(120)

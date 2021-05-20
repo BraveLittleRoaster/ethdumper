@@ -1,6 +1,7 @@
 from ethdumper.setup_logger import ConsoleLogger
 import sys, time
 import argparse
+import random
 from tqdm import tqdm
 from multiprocessing.dummy import Pool
 from urllib3.connectionpool import xrange
@@ -28,7 +29,8 @@ class RetryException(Exception):
 
 
 def shard(input_list, n):
-    """ Yield successive n-sized chunks from an input list."""
+    """ Yield successive n-sized chunks from an input list, and randomize the order."""
+    random.shuffle(input_list)
     for i in xrange(0, len(input_list), n):
         yield input_list[i:i + n]
 

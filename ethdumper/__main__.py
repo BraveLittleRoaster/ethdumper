@@ -433,12 +433,12 @@ def do_login(driver, privKey):
         return driver.page_source
 
     except TimeoutException as e:
-        logger.warn(f"Worker failed to login with {padded_key}. Skipping...")
+        logger.debug(f"Worker failed to login with {padded_key}. Skipping...")
         if vlevel >= 3:
             traceback.print_exc()
         return False
     except (NoSuchWindowException, InvalidSessionIdException, WebDriverException) as worker_error:
-        logger.error(f"Driver crashed for worker when processing {privKey}. Will retry this. {worker_error}")
+        logger.debug(f"Driver crashed for worker when processing {privKey}. Will retry this. {worker_error}")
         if vlevel >= 3:
             traceback.print_exc()
         raise RetryException

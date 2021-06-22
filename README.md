@@ -1,7 +1,9 @@
 Install with `python3 setup.py install` 
 
 Collects dust or balances from a bunch of private keys you scraped off the internet or whatever with My Ether Wallet. 
-Can scan/collect on 5,500~ wallets in a few hours. Nothing fancy.
+Can scan/collect on 5,500~ wallets in a few hours. Nothing fancy 👍
+
+Example: `ethdumper -iL bunchakeys.txt -w 6 -o outfile.json`
 
 Usage: 
 
